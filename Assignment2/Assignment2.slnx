@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="BlackJack/BlackJack.vcxproj" Id="603063df-5342-418e-a1d2-18115685edb6" />
+</Solution>
