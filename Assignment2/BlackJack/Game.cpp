@@ -69,7 +69,7 @@ void Game::handleEvents()
 void Game::update()
 {
     if (inGame)
-        game.update();
+        game.update(mouseX, mouseY, click);
 }
 
 void Game::render()
@@ -86,6 +86,9 @@ void Game::render()
 
 void Game::clean()
 {
+    menu.clean();
+    game.clean();
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 

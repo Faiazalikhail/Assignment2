@@ -47,3 +47,10 @@ bool MenuScene::playPressed()
 {
     return startGame;
 }
+
+void MenuScene::clean()
+{
+    SDL_DestroyTexture(bgTexture);
+    SDL_DestroyTexture(logoTexture);
+    SDL_DestroyTexture(buttonTexture);
+}

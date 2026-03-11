@@ -11,9 +11,11 @@ public:
 
     void init(SDL_Renderer* renderer);
 
-    void update();
+    void update(int mouseX, int mouseY, bool click);
 
     void render(SDL_Renderer* renderer);
+
+    void clean();
 
 private:
 
@@ -28,6 +30,12 @@ private:
 
     Button hitButton;
     Button standButton;
+
+    Button chip10Button;
+    Button chip50Button;
+    Button chip100Button;
+    Button clearButton;
+    Button dealButton;
 
     // layout anchors
     int dealerY;
