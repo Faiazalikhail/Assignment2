@@ -1,5 +1,6 @@
 #include "Game.h"
 #include <SDL_image.h>
+#include "InputManager.h"
 
 Game::Game()
 {
@@ -39,27 +40,18 @@ bool Game::init(const char* title, int width, int height)
 
 void Game::handleEvents()
 {
-    SDL_Event event;
-    click = false;
+    InputManager::getInstance()->update();
 
-    while (SDL_PollEvent(&event))
-    {
-        if (event.type == SDL_QUIT)
-            isRunning = false;
-
-        if (event.type == SDL_MOUSEMOTION)
-        {
-            mouseX = event.motion.x;
-            mouseY = event.motion.y;
-        }
-
-        if (event.type == SDL_MOUSEBUTTONDOWN)
-            click = true;
-    }
+    if (InputManager::getInstance()->isQuit())
+        isRunning = false;
 
     if (!inGame)
     {
-        menu.handleEvents(mouseX, mouseY, click);
+        menu.handleEvents(
+            InputManager::getInstance()->getMouseX(),
+            InputManager::getInstance()->getMouseY(),
+            InputManager::getInstance()->isMouseClicked()
+        );
 
         if (menu.playPressed())
             inGame = true;
@@ -86,6 +78,9 @@ void Game::render()
 
 void Game::clean()
 {
+    menu.clean();
+    game.clean();
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 

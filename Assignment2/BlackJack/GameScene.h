@@ -15,6 +15,8 @@ public:
 
     void render(SDL_Renderer* renderer);
 
+    void clean();
+
 private:
 
     SDL_Renderer* renderer;
@@ -28,6 +30,12 @@ private:
 
     Button hitButton;
     Button standButton;
+
+    Button chip10Button;
+    Button chip50Button;
+    Button chip100Button;
+    Button clearButton;
+    Button dealButton;
 
     // layout anchors
     int dealerY;
