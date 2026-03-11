@@ -11,7 +11,7 @@ public:
 
     void init(SDL_Renderer* renderer);
 
-    void update(int mouseX, int mouseY, bool click);
+    void update();
 
     void render(SDL_Renderer* renderer);
 

@@ -1,4 +1,5 @@
 #include "GameScene.h"
+#include "InputManager.h"
 
 void GameScene::init(SDL_Renderer* ren)
 {
@@ -56,8 +57,12 @@ void GameScene::init(SDL_Renderer* ren)
 
 }
 
-void GameScene::update(int mouseX, int mouseY, bool click)
+void GameScene::update()
 {
+    int mouseX = InputManager::getInstance()->getMouseX();
+    int mouseY = InputManager::getInstance()->getMouseY();
+    bool click = InputManager::getInstance()->isMouseClicked();
+
     if (game.state == GameState::PlayerTurn) {
         hitButton.update(mouseX, mouseY, click);
         standButton.update(mouseX, mouseY, click);
@@ -152,7 +157,14 @@ void GameScene::render(SDL_Renderer* renderer)
 void GameScene::clean()
 {
     SDL_DestroyTexture(tableTexture);
+    tableTexture = nullptr;
+
     SDL_DestroyTexture(cardTexture);
+    cardTexture = nullptr;
+
     SDL_DestroyTexture(buttonTexture);
+    buttonTexture = nullptr;
+
     SDL_DestroyTexture(chipTexture);
+    chipTexture = nullptr;
 }

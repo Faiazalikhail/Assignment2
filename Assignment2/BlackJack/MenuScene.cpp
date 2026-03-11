@@ -51,6 +51,11 @@ bool MenuScene::playPressed()
 void MenuScene::clean()
 {
     SDL_DestroyTexture(bgTexture);
+    bgTexture = nullptr;
+
     SDL_DestroyTexture(logoTexture);
+    logoTexture = nullptr;
+
     SDL_DestroyTexture(buttonTexture);
+    buttonTexture = nullptr;
 }
