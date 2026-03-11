@@ -30,10 +30,18 @@ private:
 
     Button hitButton;
     Button standButton;
+    Button doubleButton;
+    Button splitButton;
 
     Button chip10Button;
     Button chip50Button;
     Button chip100Button;
+    Button chip500Button;
+    Button chip1000Button;
+
+    Button betButton;
+    Button playButton;
+    Button quitButton;
     Button clearButton;
     Button dealButton;
 

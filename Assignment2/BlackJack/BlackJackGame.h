@@ -67,6 +67,16 @@ public:
             return;
         }
 
+        bool playerBlackJack = (player.hand.getCards().size() == 2 && p == 21);
+        bool dealerBlackJack = (dealer.hand.getCards().size() == 2 && d == 21);
+
+        if (playerBlackJack && !dealerBlackJack) {
+            // Natural Blackjack pays 3:2
+            player.credits += (player.bet * 2) + (player.bet / 2);
+            player.bet = 0;
+            return;
+        }
+
         if (dealer.hand.bust() || p > d) {
             player.win();
         }
