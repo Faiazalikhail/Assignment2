@@ -12,9 +12,8 @@ public:
     void init(SDL_Renderer* r);
     void handleEvents(int mx, int my, bool click);
     void update();
-    void render();
-    void clean();
 
+    void render(SDL_Renderer* renderer);
 
 private:
 
@@ -96,20 +95,6 @@ private:
 
     Button hitButton;
     Button standButton;
-    Button doubleButton;
-    Button splitButton;
-
-    // Added to hook logic properly without touching old UI vars where possible
-    void resetChipCounts();
-
-    // ========================================
-    // ROUND INFORMATION
-    // ========================================
-
-    int currentBet = 0;
-
-    std::string roundResult = "";
-    std::string currentBetTextString = "";
 
     // UI textures
     SDL_Texture* roundResultText = nullptr;

@@ -32,4 +32,10 @@ private:
 
     MenuScene menu;
     GameScene game;
+
+    bool inGame;
+
+    int mouseX;
+    int mouseY;
+    bool click;
 };

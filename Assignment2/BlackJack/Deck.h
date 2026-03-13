@@ -38,5 +38,5 @@ public:
 private:
 
     std::vector<Card> cards;
-    size_t index = 0;
+    int index = 0;
 };
