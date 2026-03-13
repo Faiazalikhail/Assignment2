@@ -72,8 +72,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExecutablePath>C:\Users\Mohammad\Desktop\Programming Fundamentals Excercises\Assignment2\Assignment2\EXTERNAL\SDL2\include;$(ExecutablePath)</ExecutablePath>
-    <LibraryPath>C:\Users\Mohammad\Desktop\Programming Fundamentals Excercises\Assignment2\Assignment2\EXTERNAL\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>..\EXTERNAL\SDL2\include;$(ExecutablePath)</ExecutablePath>
+    <LibraryPath>..\EXTERNAL\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -115,7 +115,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\EXTERNAL\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

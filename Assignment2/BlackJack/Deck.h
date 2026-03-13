@@ -12,7 +12,7 @@ public:
     {
         for (int s = 0; s < 4; s++)
         {
-            for (int r = 1; r <= 13; r++)
+            for (int r = 0; r < 13; r++)
             {
                 cards.push_back(Card(s, r));
             }
