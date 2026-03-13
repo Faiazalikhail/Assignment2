@@ -4,6 +4,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include "Button.h"
+#include "BlackJackGame.h"
 
 class GameScene
 {
@@ -12,8 +13,9 @@ public:
     void init(SDL_Renderer* r);
     void handleEvents(int mx, int my, bool click);
     void update();
+    void render();
+    void clean();
 
-    void render(SDL_Renderer* renderer);
 
 private:
 
@@ -48,7 +50,7 @@ private:
 
     SDL_Texture* cardTexture = nullptr;
 
-    const int CARD_W = 117;
+    const int CARD_W = 81;
     const int CARD_H = 164;
 
     void drawCard(int rank, int suit, int x, int y);
@@ -95,6 +97,22 @@ private:
 
     Button hitButton;
     Button standButton;
+    Button doubleButton;
+    Button splitButton;
+
+    // Added to hook logic properly without touching old UI vars where possible
+    void resetChipCounts();
+
+    // ========================================
+    // ROUND INFORMATION
+    // ========================================
+
+    BlackJackGame game;
+
+    int currentBet = 0;
+
+    std::string roundResult = "";
+    std::string currentBetTextString = "";
 
     // UI textures
     SDL_Texture* roundResultText = nullptr;

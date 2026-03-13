@@ -38,7 +38,7 @@ public:
         hands.push_back(Hand());
         isSplit = false;
         activeHand = 0;
-        bet = 0;
+        // Do NOT reset bet here, as the round is just starting with the placed bet.
     }
 
     Hand& getActiveHand()
