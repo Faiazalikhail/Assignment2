@@ -15,8 +15,6 @@ public:
 
     bool playPressed();
 
-    void clean();
-
 private:
 
     SDL_Texture* bgTexture;

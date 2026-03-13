@@ -9,22 +9,20 @@ public:
     {
         credits = 1000;
         bet = 0;
-        isSplit = false;
-        activeHand = 0;
     }
 
     void placeBet(int amount)
     {
         if (amount <= credits)
         {
-            bet += amount;
+            bet = amount;
             credits -= amount;
         }
     }
 
-    void win(int multiplier = 2)
+    void win()
     {
-        credits += bet * multiplier;
+        credits += bet * 2;
     }
 
     void push()
@@ -34,21 +32,10 @@ public:
 
     void resetHand()
     {
-        hands.clear();
-        hands.push_back(Hand());
-        isSplit = false;
-        activeHand = 0;
-        bet = 0;
+        hand = Hand();
     }
 
-    Hand& getActiveHand()
-    {
-        return hands[activeHand];
-    }
-
-    std::vector<Hand> hands;
-    bool isSplit;
-    int activeHand;
+    Hand hand;
 
     int credits;
     int bet;
