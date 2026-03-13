@@ -3,32 +3,54 @@
 
 Game::Game()
 {
+    window = nullptr;
+    renderer = nullptr;
     isRunning = false;
     inGame = false;
 }
 
-Game::~Game() {}
-
-bool Game::init(const char* title, int width, int height)
+bool Game::init()
 {
-    SDL_Init(SDL_INIT_VIDEO);
-    IMG_Init(IMG_INIT_PNG);
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        std::cout << "SDL Init Failed\n";
+        return false;
+    }
+
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG))
+    {
+        std::cout << "IMG Init Failed\n";
+        return false;
+    }
 
     window = SDL_CreateWindow(
-        title,
+        "Blackjack",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        width,
-        height,
-        SDL_WINDOW_SHOWN
+        1024,
+        768,
+        0
     );
+
+    if (!window)
+    {
+        std::cout << "Window creation failed\n";
+        return false;
+    }
 
     renderer = SDL_CreateRenderer(
         window,
         -1,
-        SDL_RENDERER_ACCELERATED
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     );
 
+    if (!renderer)
+    {
+        std::cout << "Renderer creation failed\n";
+        return false;
+    }
+
+    // Initialize scenes
     menu.init(renderer);
     game.init(renderer);
 
@@ -57,12 +79,20 @@ void Game::handleEvents()
             click = true;
     }
 
+    int mouseX = InputManager::getInstance()->getMouseX();
+    int mouseY = InputManager::getInstance()->getMouseY();
+    bool click = InputManager::getInstance()->isMouseClicked();
+
     if (!inGame)
     {
         menu.handleEvents(mouseX, mouseY, click);
 
         if (menu.playPressed())
             inGame = true;
+    }
+    else
+    {
+        game.handleEvents(mouseX, mouseY, click);
     }
 }
 
@@ -79,7 +109,7 @@ void Game::render()
     if (!inGame)
         menu.render(renderer);
     else
-        game.render(renderer);
+        game.render();
 
     SDL_RenderPresent(renderer);
 }

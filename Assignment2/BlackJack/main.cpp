@@ -4,7 +4,7 @@ int main(int argc, char* argv[])
 {
     Game game;
 
-    if (!game.init("Blackjack", 1024, 768))
+    if (!game.init())
         return -1;
 
     while (game.running())

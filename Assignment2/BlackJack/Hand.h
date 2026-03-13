@@ -33,6 +33,16 @@ public:
         return total;
     }
 
+    bool isSplittable()
+    {
+        if (cards.size() == 2)
+        {
+            // Usually split requires same rank
+            return cards[0].rank == cards[1].rank;
+        }
+        return false;
+    }
+
     bool bust()
     {
         return getValue() > 21;
