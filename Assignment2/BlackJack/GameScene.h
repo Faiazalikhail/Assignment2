@@ -1,52 +1,114 @@
 #pragma once
 
+#include <string>
 #include <SDL.h>
-#include "TextureManager.h"
+#include <SDL_ttf.h>
 #include "Button.h"
-#include "BlackJackGame.h"
 
 class GameScene
 {
 public:
 
-    void init(SDL_Renderer* renderer);
-
+    void init(SDL_Renderer* r);
+    void handleEvents(int mx, int my, bool click);
     void update();
-
-    void render(SDL_Renderer* renderer);
-
+    void render();
     void clean();
+
 
 private:
 
-    SDL_Renderer* renderer;
+    // ========================================
+    // CORE RENDERER
+    // ========================================
 
-    SDL_Texture* tableTexture;
-    SDL_Texture* cardTexture;
-    SDL_Texture* buttonTexture;
-    SDL_Texture* chipTexture;
+    SDL_Renderer* renderer = nullptr;
 
-    BlackJackGame game;
+
+    // ========================================
+    // BACKGROUND TEXTURES
+    // ========================================
+
+    SDL_Texture* bgTexture = nullptr;
+    SDL_Texture* tableTexture = nullptr;
+    SDL_Texture* panelTexture = nullptr;
+
+
+    // ========================================
+    // UI TEXTURES
+    // ========================================
+
+    SDL_Texture* chipTexture = nullptr;
+    SDL_Texture* arrowTexture = nullptr;
+    SDL_Texture* buttonTexture = nullptr;
+
+
+    // ========================================
+    // CARD SYSTEM
+    // ========================================
+
+    SDL_Texture* cardTexture = nullptr;
+
+    const int CARD_W = 117;
+    const int CARD_H = 164;
+
+    void drawCard(int rank, int suit, int x, int y);
+    void drawCardBack(int x, int y);
+
+
+    // ========================================
+    // CHIP PANEL
+    // ========================================
+
+    SDL_Rect leftArrow[5];
+    SDL_Rect rightArrow[5];
+
+    int chipValues[5] = { 5,25,50,100,500 };
+
+    int chipCount[5];
+
+
+    // ========================================
+    // BET SYSTEM
+    // ========================================
+
+    int wallet;
+    int totalBet;
+
+
+    // ========================================
+    // TEXT SYSTEM
+    // ========================================
+
+    TTF_Font* font;
+
+    SDL_Texture* chipCountText[5];
+    SDL_Texture* walletText;
+    SDL_Texture* betText;
+
+
+    // ========================================
+    // BUTTONS
+    // ========================================
+
+    Button playButton;
+    Button quitButton;
 
     Button hitButton;
     Button standButton;
     Button doubleButton;
     Button splitButton;
 
-    Button chip1Button;
-    Button chip5Button;
-    Button chip10Button;
-    Button chip25Button;
-    Button chip50Button;
+    // ========================================
+    // ROUND INFORMATION
+    // ========================================
 
-    Button betButton;
-    Button playButton;
-    Button quitButton;
-    Button clearButton;
-    Button dealButton;
+    int currentBet = 0;
 
-    // layout anchors
-    int dealerY;
-    int playerY;
-    int cardStartX;
+    std::string roundResult = "";
+    std::string currentBetTextString = "";
+
+    // UI textures
+    SDL_Texture* roundResultText = nullptr;
+    SDL_Texture* currentBetRoundText = nullptr;
 };
