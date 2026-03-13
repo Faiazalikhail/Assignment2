@@ -22,11 +22,11 @@ void GameScene::init(SDL_Renderer* ren)
     splitButton.init(buttonTexture, 3, 740, 650); // assuming index 3 is split
 
     // Betting Panel Chips (x = 820)
-    chip10Button.init(chipTexture, 0, 820, 200);
-    chip50Button.init(chipTexture, 1, 820, 270);
-    chip100Button.init(chipTexture, 2, 820, 340);
-    chip500Button.init(chipTexture, 3, 820, 410);
-    chip1000Button.init(chipTexture, 4, 820, 480);
+    chip1Button.init(chipTexture, 0, 820, 200);
+    chip5Button.init(chipTexture, 1, 820, 270);
+    chip10Button.init(chipTexture, 2, 820, 340);
+    chip25Button.init(chipTexture, 3, 820, 410);
+    chip50Button.init(chipTexture, 4, 820, 480);
 
     // Betting Panel Buttons (x = 820 implied from layout visual, maybe 820 or centered below chips)
     // we'll place them aligned roughly. Assuming button texture indices based on typical play/quit/bet
@@ -60,11 +60,11 @@ void GameScene::init(SDL_Renderer* ren)
             }
         });
 
+    chip1Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(1); });
+    chip5Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(5); });
     chip10Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(10); });
+    chip25Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(25); });
     chip50Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(50); });
-    chip100Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(100); });
-    chip500Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(500); });
-    chip1000Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(1000); });
 
     betButton.setCallback([this]() { /* Placeholder for bet confirmation if needed */ });
     playButton.setCallback([this]() { dealButton.update(InputManager::getInstance()->getMouseX(), InputManager::getInstance()->getMouseY(), true); });
@@ -86,11 +86,11 @@ void GameScene::update()
         splitButton.update(mouseX, mouseY, click);
     } else if (game.state == GameState::Betting) {
         dealButton.update(mouseX, mouseY, click);
+        chip1Button.update(mouseX, mouseY, click);
+        chip5Button.update(mouseX, mouseY, click);
         chip10Button.update(mouseX, mouseY, click);
+        chip25Button.update(mouseX, mouseY, click);
         chip50Button.update(mouseX, mouseY, click);
-        chip100Button.update(mouseX, mouseY, click);
-        chip500Button.update(mouseX, mouseY, click);
-        chip1000Button.update(mouseX, mouseY, click);
         clearButton.update(mouseX, mouseY, click);
         betButton.update(mouseX, mouseY, click);
         playButton.update(mouseX, mouseY, click);
@@ -171,11 +171,11 @@ void GameScene::render(SDL_Renderer* renderer)
         splitButton.render(renderer);
     } else if (game.state == GameState::Betting) {
         // dealButton.render(renderer);  -- Using play button visually
+        chip1Button.render(renderer);
+        chip5Button.render(renderer);
         chip10Button.render(renderer);
+        chip25Button.render(renderer);
         chip50Button.render(renderer);
-        chip100Button.render(renderer);
-        chip500Button.render(renderer);
-        chip1000Button.render(renderer);
         betButton.render(renderer);
         playButton.render(renderer);
         quitButton.render(renderer);

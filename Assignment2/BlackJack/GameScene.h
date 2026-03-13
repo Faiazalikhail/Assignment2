@@ -33,11 +33,11 @@ private:
     Button doubleButton;
     Button splitButton;
 
+    Button chip1Button;
+    Button chip5Button;
     Button chip10Button;
+    Button chip25Button;
     Button chip50Button;
-    Button chip100Button;
-    Button chip500Button;
-    Button chip1000Button;
 
     Button betButton;
     Button playButton;
