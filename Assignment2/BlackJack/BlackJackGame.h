@@ -17,15 +17,16 @@ public:
         player.resetHand();
         dealer.resetHand();
 
-        player.hand.addCard(deck.deal());
+        player.getActiveHand().addCard(deck.deal());
         dealer.hand.addCard(deck.deal());
 
-        player.hand.addCard(deck.deal());
+        player.getActiveHand().addCard(deck.deal());
         dealer.hand.addCard(deck.deal());
 
         state = GameState::PlayerTurn;
+        resultMessage = "";
 
-        if (player.hand.getValue() == 21) {
+        if (player.getActiveHand().getValue() == 21) {
             settle();
         }
     }
@@ -34,13 +35,80 @@ public:
     {
         if (state != GameState::PlayerTurn) return;
 
-        player.hand.addCard(deck.deal());
+        player.getActiveHand().addCard(deck.deal());
 
-        if (player.hand.bust()) {
-            settle();
-        } else if (player.hand.getValue() == 21) {
+        if (player.getActiveHand().bust()) {
+            playerStand(); // if bust, go to next hand or settle
+        } else if (player.getActiveHand().getValue() == 21) {
+            playerStand();
+        }
+    }
+
+    void playerStand()
+    {
+        if (state != GameState::PlayerTurn) return;
+
+        if (player.isSplit && player.activeHand == 0)
+        {
+            player.activeHand = 1;
+            // auto-deal one card if they only have 1 (from split)
+            if (player.getActiveHand().getCards().size() == 1)
+            {
+                player.getActiveHand().addCard(deck.deal());
+                if (player.getActiveHand().getValue() == 21) {
+                    playerStand();
+                }
+            }
+        }
+        else
+        {
             dealerTurn();
             settle();
+        }
+    }
+
+    void playerDouble()
+    {
+        if (state != GameState::PlayerTurn) return;
+
+        if (player.getActiveHand().getCards().size() == 2 && player.credits >= player.bet)
+        {
+            // bet is doubled for this hand
+            player.credits -= player.bet; // subtract the same amount again
+            player.bet *= 2;
+
+            player.getActiveHand().addCard(deck.deal());
+            playerStand();
+        }
+    }
+
+    void playerSplit()
+    {
+        if (state != GameState::PlayerTurn) return;
+
+        if (player.getActiveHand().getCards().size() == 2 &&
+            player.getActiveHand().isSplittable() &&
+            player.credits >= player.bet &&
+            !player.isSplit)
+        {
+            player.credits -= player.bet; // matching bet for the second hand
+
+            // we split the hand
+            Card splitCard = player.getActiveHand().getCards()[1];
+            player.getActiveHand().getCards().pop_back();
+
+            Hand secondHand;
+            secondHand.addCard(splitCard);
+            player.hands.push_back(secondHand);
+
+            player.isSplit = true;
+            player.activeHand = 0;
+
+            // Give a card to the first hand
+            player.getActiveHand().addCard(deck.deal());
+            if (player.getActiveHand().getValue() == 21) {
+                playerStand();
+            }
         }
     }
 
@@ -58,33 +126,41 @@ public:
     void settle()
     {
         state = GameState::GameOver;
+        resultMessage = "";
 
-        int p = player.hand.getValue();
+        int totalWinnings = 0;
         int d = dealer.hand.getValue();
-
-        if (player.hand.bust()) {
-            player.bet = 0;
-            return;
-        }
-
-        bool playerBlackJack = (player.hand.getCards().size() == 2 && p == 21);
         bool dealerBlackJack = (dealer.hand.getCards().size() == 2 && d == 21);
 
-        if (playerBlackJack && !dealerBlackJack) {
-            // Natural Blackjack pays 3:2 (bet * 2.5)
-            player.credits += (int)(player.bet * 2.5);
-            player.bet = 0;
-            return;
+        for (int i = 0; i < player.hands.size(); i++)
+        {
+            Hand& h = player.hands[i];
+            int p = h.getValue();
+            int currentHandBet = player.isSplit ? (player.bet / 2) : player.bet;
+
+            if (h.bust()) {
+                resultMessage += "Hand " + std::to_string(i + 1) + " Busts! ";
+                continue;
+            }
+
+            bool playerBlackJack = (h.getCards().size() == 2 && p == 21 && !player.isSplit);
+
+            if (playerBlackJack && !dealerBlackJack) {
+                totalWinnings += (int)(currentHandBet * 2.5);
+                resultMessage += "Blackjack! ";
+            } else if (dealer.hand.bust() || p > d) {
+                totalWinnings += currentHandBet * 2;
+                resultMessage += "Player Wins! ";
+            } else if (p == d) {
+                totalWinnings += currentHandBet;
+                resultMessage += "Push. ";
+            } else {
+                resultMessage += "Dealer Wins. ";
+            }
         }
 
-        if (dealer.hand.bust() || p > d) {
-            player.win();
-        }
-        else if (p == d) {
-            player.push();
-        } else {
-            player.bet = 0; // Dealer wins
-        }
+        player.credits += totalWinnings;
+        player.bet = 0;
     }
 
     void resetForNewRound()
@@ -99,4 +175,5 @@ public:
     Player player;
     Dealer dealer;
     GameState state;
+    std::string resultMessage;
 };

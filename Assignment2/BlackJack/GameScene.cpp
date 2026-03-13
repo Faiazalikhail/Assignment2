@@ -145,9 +145,52 @@ void GameScene::init(SDL_Renderer* r)
 
     roundResult = "";
     currentBetTextString = "Current Bet: 0";
+
+    // Hook Callbacks
+    playButton.setCallback([this]() {
+        if (game.state == GameState::Betting && totalBet > 0) {
+            currentBet = totalBet;
+            game.player.bet = currentBet; // Pass to model
+            wallet -= totalBet; // Visually deduct from UI wallet initially
+            game.player.credits = wallet; // Sync model
+            game.startRound();
+            resetChipCounts();
+        } else if (game.state == GameState::GameOver) {
+            game.resetForNewRound();
+            resetChipCounts();
+        }
+    });
+
+    quitButton.setCallback([]() {
+        exit(0);
+    });
+
+    hitButton.setCallback([this]() {
+        game.playerHit();
+    });
+
+    standButton.setCallback([this]() {
+        game.playerStand();
+    });
+
+    doubleButton.setCallback([this]() {
+        game.playerDouble();
+    });
+
+    splitButton.setCallback([this]() {
+        game.playerSplit();
+    });
 }
 
-    
+void GameScene::resetChipCounts()
+{
+    for (int i = 0; i < 5; i++)
+    {
+        chipCount[i] = 0;
+    }
+}
+
+
 
 
 // ======================================================
@@ -197,10 +240,12 @@ void GameScene::handleEvents(int mx, int my, bool click)
     playButton.update(mx, my, click);
     quitButton.update(mx, my, click);
 
-    hitButton.update(mx, my, click);
-    standButton.update(mx, my, click);
-    doubleButton.update(mx, my, click);
-    splitButton.update(mx, my, click);
+    if (game.state == GameState::PlayerTurn) {
+        hitButton.update(mx, my, click);
+        standButton.update(mx, my, click);
+        doubleButton.update(mx, my, click);
+        splitButton.update(mx, my, click);
+    }
 }
 
 
@@ -237,6 +282,13 @@ void GameScene::update()
     if (roundResultText)
         SDL_DestroyTexture(roundResultText);
 
+    if (game.state == GameState::GameOver) {
+        roundResult = game.resultMessage;
+        wallet = game.player.credits; // update wallet visually from logic engine
+    } else {
+        roundResult = "";
+    }
+
     roundResultText =
         createText(renderer, font, roundResult);
 
@@ -248,6 +300,7 @@ void GameScene::update()
     if (currentBetRoundText)
         SDL_DestroyTexture(currentBetRoundText);
 
+    currentBetTextString = "Current Bet: " + std::to_string(currentBet);
     currentBetRoundText =
         createText(renderer, font, currentBetTextString);
 }
@@ -292,13 +345,41 @@ void GameScene::render()
     SDL_RenderCopy(renderer, dealerLabel, NULL, &dealerTextRect);
 
 
-    // example placeholder cards
-	drawCard(3, 0, 300, 80);      // 3 clubs
-    drawCardBack(440, 80);      // hidden dealer card
+    int dealerY = 160;
+    int cardStartX = 430;
+    int spacing = 110;
 
+    int dx = cardStartX;
+    if (game.state != GameState::Betting)
+    {
+        bool hideSecondCard = (game.state == GameState::PlayerTurn && game.dealer.hand.getCards().size() >= 2);
+
+        int cardIndex = 0;
+        for (auto& c : game.dealer.hand.getCards())
+        {
+            if (hideSecondCard && cardIndex == 1) {
+                drawCardBack(dx, dealerY);
+            } else {
+                drawCard(c.rank, c.suit, dx, dealerY);
+            }
+            dx += spacing;
+            cardIndex++;
+        }
+    }
+
+
+    std::string dealerValStr = "Hand Value: ";
+    if (game.state != GameState::Betting && game.state != GameState::PlayerTurn)
+    {
+        dealerValStr += std::to_string(game.dealer.hand.getValue());
+    }
+    else
+    {
+        dealerValStr += "?";
+    }
 
     SDL_Texture* dealerValue =
-        createText(renderer, font, "Hand Value:");
+        createText(renderer, font, dealerValStr);
 
     SDL_Rect dealerValueRect;
 
@@ -306,9 +387,10 @@ void GameScene::render()
         &dealerValueRect.w, &dealerValueRect.h);
 
     dealerValueRect.x = 360;
-    dealerValueRect.y = 250;
+    dealerValueRect.y = 310;
 
     SDL_RenderCopy(renderer, dealerValue, NULL, &dealerValueRect);
+    SDL_DestroyTexture(dealerValue);
 
     // ======================================================
     // PLAYER HAND LABEL
@@ -323,53 +405,64 @@ void GameScene::render()
         &playerLabelRect.w, &playerLabelRect.h);
 
     playerLabelRect.x = 375;
-    playerLabelRect.y = 310;
+    playerLabelRect.y = 390;
 
     SDL_RenderCopy(renderer, playerLabel, NULL, &playerLabelRect);
+    SDL_DestroyTexture(playerLabel);
+    SDL_DestroyTexture(dealerLabel);
 
     // ======================================================
-    // PLAYER HAND 1
+    // PLAYER HAND(S)
     // ======================================================
 
-    drawCard(8, 0, 230, 340);
-    drawCard(8, 0, 270, 350);
+    int playerY = 420;
 
-    SDL_Texture* hand1Label =
-        createText(renderer, font, "Hand 1");
+    if (game.state != GameState::Betting && !game.player.hands.empty())
+    {
+        if (!game.player.isSplit)
+        {
+            int px = cardStartX;
+            for (auto& c : game.player.hands[0].getCards())
+            {
+                drawCard(c.rank, c.suit, px, playerY);
+                px += spacing;
+            }
+        }
+        else
+        {
+            // Hand 1 Render
+            int px1 = cardStartX - 200;
+            for (auto& c : game.player.hands[0].getCards())
+            {
+                drawCard(c.rank, c.suit, px1, playerY);
+                px1 += spacing;
+            }
 
-    SDL_Rect hand1Rect;
+            SDL_Texture* hand1Label = createText(renderer, font, "Hand 1");
+            SDL_Rect hand1Rect;
+            SDL_QueryTexture(hand1Label, NULL, NULL, &hand1Rect.w, &hand1Rect.h);
+            hand1Rect.x = cardStartX - 200;
+            hand1Rect.y = 600;
+            SDL_RenderCopy(renderer, hand1Label, NULL, &hand1Rect);
+            SDL_DestroyTexture(hand1Label);
 
-    SDL_QueryTexture(hand1Label, NULL, NULL,
-        &hand1Rect.w, &hand1Rect.h);
+            // Hand 2 Render
+            int px2 = cardStartX + 200;
+            for (auto& c : game.player.hands[1].getCards())
+            {
+                drawCard(c.rank, c.suit, px2, playerY);
+                px2 += spacing;
+            }
 
-    hand1Rect.x = 265;
-    hand1Rect.y = 520;
-
-    SDL_RenderCopy(renderer, hand1Label, NULL, &hand1Rect);
-
-    // ---------------------------
-    // RIGHT PANEL
-    // ---------------------------
-
-    // ======================================================
-    // PLAYER HAND 2 PLACEHOLDER
-    // ======================================================
-
-    drawCard(8, 0, 480, 340);
-    drawCard(8, 0, 520, 350);
-
-    SDL_Texture* hand2Label =
-        createText(renderer, font, "Hand 2 (if split)");
-
-    SDL_Rect hand2Rect;
-
-    SDL_QueryTexture(hand2Label, NULL, NULL,
-        &hand2Rect.w, &hand2Rect.h);
-
-    hand2Rect.x = 500;
-    hand2Rect.y = 520;
-
-    SDL_RenderCopy(renderer, hand2Label, NULL, &hand2Rect);
+            SDL_Texture* hand2Label = createText(renderer, font, "Hand 2");
+            SDL_Rect hand2Rect;
+            SDL_QueryTexture(hand2Label, NULL, NULL, &hand2Rect.w, &hand2Rect.h);
+            hand2Rect.x = cardStartX + 200;
+            hand2Rect.y = 600;
+            SDL_RenderCopy(renderer, hand2Label, NULL, &hand2Rect);
+            SDL_DestroyTexture(hand2Label);
+        }
+    }
 
     SDL_Rect panelRect = { 820,0,204,768 };
     SDL_RenderCopy(renderer, panelTexture, NULL, &panelRect);
