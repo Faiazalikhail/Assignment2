@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
         game.render();
     }
 
+
     game.clean();
 
     return 0;
