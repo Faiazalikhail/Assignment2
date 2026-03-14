@@ -1,4 +1,8 @@
 #include "GameScene.h"
+#include "TextureManager.h"
+#include <SDL_ttf.h>
+#include <string>
+#include <cstdlib>
 
 
 // ======================================================
@@ -7,33 +11,248 @@
 // ======================================================
 SDL_Texture* createText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text)
 {
-    renderer = ren;
+    SDL_Color white = { 255,255,255 };
 
-    tableTexture = TextureManager::LoadTexture("../images/TABLE.png", ren);
-    cardTexture = TextureManager::LoadTexture("../images/CARDS.png", ren);
-    buttonTexture = TextureManager::LoadTexture("../images/BUTTONS.png", ren);
-    chipTexture = TextureManager::LoadTexture("../images/CHIPS.png", ren);
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), white);
 
-    // layout anchors
-    dealerY = 160;
-    playerY = 420;
-    cardStartX = 350;
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 
-    hitButton.init(buttonTexture, 2, 360, 650);
-    standButton.init(buttonTexture, 3, 560, 650);
+    SDL_FreeSurface(surface);
 
-    hitButton.setCallback([this]()
+    return texture;
+}
+
+    // ======================================================
+    // DRAW CARD FROM SPRITESHEET
+    // ======================================================
+void GameScene::drawCard(int rank, int suit, int x, int y)
+{
+    SDL_Rect src;
+
+    // The first two sprites (indices 0 and 1) are card backs.
+    // Real cards start at index 2.
+    src.x = (rank + 2) * CARD_W;
+    src.y = suit * CARD_H;
+    src.w = CARD_W;
+    src.h = CARD_H;
+
+    SDL_Rect dest;
+
+    dest.x = x;
+    dest.y = y;
+    dest.w = CARD_W;
+    dest.h = CARD_H;
+
+    SDL_RenderCopy(renderer, cardTexture, &src, &dest);
+}
+
+void GameScene::drawCardBack(int x, int y)
+{
+    SDL_Rect src;
+
+    src.x = 0; // Using the first card back (index 0)
+    src.y = 0;
+    src.w = CARD_W;
+    src.h = CARD_H;
+
+    SDL_Rect dest = { x,y,CARD_W,CARD_H };
+
+    SDL_RenderCopy(renderer, cardTexture, &src, &dest);
+}
+
+// ======================================================
+// INITIALIZATION
+// Loads textures, fonts and prepares UI elements
+// ======================================================
+void GameScene::init(SDL_Renderer* r)
+{
+    renderer = r;
+
+    // ---------------------------
+    // BACKGROUND LAYERS
+    // ---------------------------
+
+    bgTexture = TextureManager::LoadTexture("../images/BG.png", renderer);
+    tableTexture = TextureManager::LoadTexture("../images/TABLE.png", renderer);
+    panelTexture = TextureManager::LoadTexture("../images/CHIPBG.png", renderer);
+
+    // ---------------------------
+    // UI SPRITES
+    // ---------------------------
+
+    chipTexture = TextureManager::LoadTexture("../images/CHIPS.png", renderer);
+    arrowTexture = TextureManager::LoadTexture("../images/ARROWS.png", renderer);
+    buttonTexture = TextureManager::LoadTexture("../images/BUTTONS.png", renderer);
+
+    // ---------------------------
+    // FONT SYSTEM
+    // ---------------------------
+
+    TTF_Init();
+    font = TTF_OpenFont("../fonts/ds-digit.ttf", 22);
+
+    // ---------------------------
+    // CHIP PANEL LAYOUT
+    // ---------------------------
+
+    int rows[5] = { 110,210,310,410,510 };
+
+    for (int i = 0; i < 5; i++)
+    {
+        leftArrow[i] = { 845, rows[i], 26, 40 };
+        rightArrow[i] = { 965, rows[i], 26, 40 };
+    }
+
+    // ---------------------------
+    // PLAYER ECONOMY
+    // ---------------------------
+
+    wallet = 1000;
+    totalBet = 0;
+
+    for (int i = 0; i < 5; i++)
+    {
+        chipCount[i] = 0;
+        chipCountText[i] = nullptr;
+    }
+
+    walletText = nullptr;
+    betText = nullptr;
+
+    // ======================================================
+    // PANEL BUTTONS (RIGHT SIDE)
+    // ======================================================
+
+    playButton.init(buttonTexture, 4, 845, 620);   // BET
+    quitButton.init(buttonTexture, 1, 845, 680);   // QUIT
+
+
+    // ======================================================
+    // TABLE ACTION BUTTONS (BOTTOM CENTER)
+    // ======================================================
+
+    hitButton.init(buttonTexture, 2, 120, 660);      // HIT
+    standButton.init(buttonTexture, 3, 270, 660);    // STAND
+    doubleButton.init(buttonTexture, 5, 420, 660);   // DOUBLE
+    splitButton.init(buttonTexture, 6, 570, 660);    // SPLIT
+
+    // ================================
+    // CARD SPRITESHEET
+    // ================================
+
+    cardTexture = TextureManager::LoadTexture("../images/CARDS.png", renderer);
+
+	// round initialization
+
+    currentBet = 0;
+
+    roundResult = "";
+    currentBetTextString = "Current Bet: 0";
+
+    // ========================================
+    // LOGIC CALLBACKS (DO NOT MODIFY UI VARIABLES)
+    // ========================================
+
+    playButton.setCallback([this]() {
+        if (game.state == GameState::Betting && totalBet > 0) {
+            currentBet = totalBet;
+            game.player.bet = currentBet;
+            wallet -= totalBet; // Visually update UI wallet
+            game.player.credits = wallet; // Sync to logic
+            game.startRound();
+            for (int i = 0; i < 5; i++) chipCount[i] = 0; // Reset visual chips
+        } else if (game.state == GameState::GameOver) {
+            game.resetForNewRound();
+            for (int i = 0; i < 5; i++) chipCount[i] = 0;
+            currentBet = 0;
+        }
+    });
+
+    quitButton.setCallback([]() {
+        exit(0);
+    });
+
+    hitButton.setCallback([this]() {
+        game.playerHit();
+    });
+
+    standButton.setCallback([this]() {
+        game.playerStand();
+    });
+
+    doubleButton.setCallback([this]() {
+        if (wallet >= currentBet) {
+            game.playerDouble();
+            wallet = game.player.credits;
+            currentBet = game.player.bet;
+        }
+    });
+
+    splitButton.setCallback([this]() {
+        if (wallet >= currentBet) {
+            game.playerSplit();
+            wallet = game.player.credits;
+            currentBet = game.player.bet;
+        }
+    });
+}
+
+
+
+
+// ======================================================
+// INPUT HANDLING
+// Handles chip arrows and button interactions
+// ======================================================
+void GameScene::handleEvents(int mx, int my, bool click)
+{
+    int rows[5] = { 100,200,300,400,500 };
+
+    // ---------------------------
+    // CHIP ARROW CONTROLS
+    // ---------------------------
+
+    for (int i = 0; i < 5; i++)
+    {
+        SDL_Rect L = leftArrow[i];
+        SDL_Rect R = rightArrow[i];
+
+        bool hoverL =
+            mx >= L.x && mx <= L.x + L.w &&
+            my >= L.y && my <= L.y + L.h;
+
+        bool hoverR =
+            mx >= R.x && mx <= R.x + R.w &&
+            my >= R.y && my <= R.y + R.h;
+
+        if (click)
         {
-            game.playerHit();
-        });
+            if (hoverL && chipCount[i] > 0)
+                chipCount[i]--;
 
-    standButton.setCallback([this]()
-        {
-            game.dealerTurn();
-            game.settle();
-        });
+            if (hoverR)
+            {
+                int futureBet = totalBet + chipValues[i];
 
-    game.startRound();
+                if (futureBet <= wallet)
+                    chipCount[i]++;
+            }
+        }
+    }
+
+    // ---------------------------
+    // BUTTON INPUT
+    // ---------------------------
+
+    playButton.update(mx, my, click);
+    quitButton.update(mx, my, click);
+
+    if (game.state == GameState::PlayerTurn) {
+        hitButton.update(mx, my, click);
+        standButton.update(mx, my, click);
+        doubleButton.update(mx, my, click);
+        splitButton.update(mx, my, click);
+    }
 }
 
 
@@ -44,6 +263,53 @@ SDL_Texture* createText(SDL_Renderer* renderer, TTF_Font* font, const std::strin
 // ======================================================
 void GameScene::update()
 {
+    totalBet = 0;
+
+    for (int i = 0; i < 5; i++)
+        totalBet += chipCount[i] * chipValues[i];
+
+    if (walletText) SDL_DestroyTexture(walletText);
+    if (betText) SDL_DestroyTexture(betText);
+
+    walletText = createText(renderer, font, "Wallet: " + std::to_string(wallet));
+    betText = createText(renderer, font, "Current Bet: " + std::to_string(totalBet));
+
+    for (int i = 0; i < 5; i++)
+    {
+        if (chipCountText[i]) SDL_DestroyTexture(chipCountText[i]);
+
+        chipCountText[i] =
+            createText(renderer, font, "x" + std::to_string(chipCount[i]));
+    }
+
+    // ========================================
+    // ROUND RESULT TEXT
+    // ========================================
+
+    if (roundResultText)
+        SDL_DestroyTexture(roundResultText);
+
+    if (game.state == GameState::GameOver) {
+        roundResult = game.resultMessage;
+        wallet = game.player.credits; // update wallet visually from logic engine
+    } else {
+        roundResult = " ";
+    }
+
+    roundResultText =
+        createText(renderer, font, roundResult);
+
+
+    // ========================================
+    // CURRENT BET DURING ROUND
+    // ========================================
+
+    if (currentBetRoundText)
+        SDL_DestroyTexture(currentBetRoundText);
+
+    currentBetTextString = "Current Bet: " + std::to_string(currentBet);
+    currentBetRoundText =
+        createText(renderer, font, currentBetTextString);
 }
 
 
@@ -83,16 +349,43 @@ void GameScene::render()
     dealerTextRect.x = 375;
     dealerTextRect.y = 50;
 
-    int x = cardStartX;
+    SDL_RenderCopy(renderer, dealerLabel, NULL, &dealerTextRect);
 
-    for (auto& c : game.dealer.hand.getCards())
+
+    int dealerY = 160;
+    int dealerStartX = 430;
+
+    if (game.state != GameState::Betting && !game.dealer.hand.getCards().empty())
     {
-        SDL_Rect src;
+        bool hideSecondCard = (game.state == GameState::PlayerTurn && game.dealer.hand.getCards().size() >= 2);
+        int dx = dealerStartX;
+        int index = 0;
 
-        src.w = 96;
-        src.h = 140;
-        src.x = (c.rank - 1) * 96;
-        src.y = c.suit * 140;
+        for (auto& c : game.dealer.hand.getCards())
+        {
+            if (hideSecondCard && index == 1)
+            {
+                drawCardBack(dx, dealerY);
+            }
+            else
+            {
+                drawCard(c.rank, c.suit, dx, dealerY);
+            }
+            dx += 110;
+            index++;
+        }
+    }
+
+
+    std::string dVal = "Hand Value: ";
+    if (game.state != GameState::Betting && game.state != GameState::PlayerTurn) {
+        dVal += std::to_string(game.dealer.hand.getValue());
+    } else {
+        dVal += "?";
+    }
+
+    SDL_Texture* dealerValue =
+        createText(renderer, font, dVal);
 
     SDL_Rect dealerValueRect;
 
@@ -100,7 +393,7 @@ void GameScene::render()
         &dealerValueRect.w, &dealerValueRect.h);
 
     dealerValueRect.x = 360;
-    dealerValueRect.y = 310;
+    dealerValueRect.y = 250;
 
     SDL_RenderCopy(renderer, dealerValue, NULL, &dealerValueRect);
     SDL_DestroyTexture(dealerValue);
@@ -118,56 +411,82 @@ void GameScene::render()
         &playerLabelRect.w, &playerLabelRect.h);
 
     playerLabelRect.x = 375;
-    playerLabelRect.y = 390;
+    playerLabelRect.y = 310;
 
     SDL_RenderCopy(renderer, playerLabel, NULL, &playerLabelRect);
     SDL_DestroyTexture(playerLabel);
     SDL_DestroyTexture(dealerLabel);
 
     // ======================================================
-    // PLAYER HAND(S)
+    // PLAYER HAND 1
     // ======================================================
 
     int playerY = 420;
+    int playerStartX = 430;
 
     if (game.state != GameState::Betting && !game.player.hands.empty())
     {
         if (!game.player.isSplit)
         {
-            int px = cardStartX;
+            int px = playerStartX;
             for (auto& c : game.player.hands[0].getCards())
             {
                 drawCard(c.rank, c.suit, px, playerY);
-                px += spacing;
+                px += 110;
             }
         }
         else
         {
-            // Hand 1 Render
-            int px1 = cardStartX - 200;
+            // Split hands appear side-by-side
+            int px1 = playerStartX - 150;
             for (auto& c : game.player.hands[0].getCards())
             {
                 drawCard(c.rank, c.suit, px1, playerY);
-                px1 += spacing;
+                px1 += 110;
             }
 
-            SDL_Texture* hand1Label = createText(renderer, font, "Hand 1");
-            SDL_Rect hand1Rect;
-            SDL_QueryTexture(hand1Label, NULL, NULL, &hand1Rect.w, &hand1Rect.h);
-            hand1Rect.x = cardStartX - 200;
-            hand1Rect.y = 600;
-            SDL_RenderCopy(renderer, hand1Label, NULL, &hand1Rect);
-            SDL_DestroyTexture(hand1Label);
-
-            // Hand 2 Render
-            int px2 = cardStartX + 200;
+            int px2 = playerStartX + 150;
             for (auto& c : game.player.hands[1].getCards())
             {
                 drawCard(c.rank, c.suit, px2, playerY);
-                px2 += spacing;
+                px2 += 110;
             }
+        }
+    }
 
-        x += 110;
+    SDL_Texture* hand1Label =
+        createText(renderer, font, "Hand 1");
+
+    SDL_Rect hand1Rect;
+
+    SDL_QueryTexture(hand1Label, NULL, NULL,
+        &hand1Rect.w, &hand1Rect.h);
+
+    hand1Rect.x = 265;
+    hand1Rect.y = 520;
+
+    SDL_RenderCopy(renderer, hand1Label, NULL, &hand1Rect);
+    SDL_DestroyTexture(hand1Label);
+
+    // ---------------------------
+    // RIGHT PANEL / HAND 2
+    // ---------------------------
+
+    if (game.player.isSplit && game.player.hands.size() > 1)
+    {
+        SDL_Texture* hand2Label =
+            createText(renderer, font, "Hand 2 (if split)");
+
+        SDL_Rect hand2Rect;
+
+        SDL_QueryTexture(hand2Label, NULL, NULL,
+            &hand2Rect.w, &hand2Rect.h);
+
+        hand2Rect.x = 500;
+        hand2Rect.y = 520;
+
+        SDL_RenderCopy(renderer, hand2Label, NULL, &hand2Rect);
+        SDL_DestroyTexture(hand2Label);
     }
 
     SDL_Rect panelRect = { 820,0,204,768 };
@@ -257,6 +576,137 @@ void GameScene::render()
     }
 
 
+
+    // ======================================================
+    // PANEL BUTTONS
+    // ======================================================
+
+    playButton.render(renderer);
+    quitButton.render(renderer);
+
+
+
+    // ======================================================
+    // TABLE ACTION BUTTONS
+    // ======================================================
+
     hitButton.render(renderer);
     standButton.render(renderer);
+    doubleButton.render(renderer);
+    splitButton.render(renderer);
+
+
+
+    // ======================================================
+    // WALLET TEXT
+    // ======================================================
+
+    SDL_Rect walletRect;
+
+    SDL_QueryTexture(walletText, NULL, NULL, &walletRect.w, &walletRect.h);
+
+    walletRect.x = 820 + (204 / 2) - (walletRect.w / 2);
+    walletRect.y = 30;
+
+    SDL_RenderCopy(renderer, walletText, NULL, &walletRect);
+
+
+
+    // ======================================================
+    // CURRENT BET TEXT
+    // ======================================================
+
+    SDL_Rect betRect;
+
+    SDL_QueryTexture(betText, NULL, NULL, &betRect.w, &betRect.h);
+
+    betRect.x = 820 + (204 / 2) - (betRect.w / 2);
+    betRect.y = 65;
+
+    SDL_RenderCopy(renderer, betText, NULL, &betRect);
+
+    // ========================================
+    // ROUND RESULT (TOP LEFT)
+    // ========================================
+
+    if (roundResultText)
+    {
+        SDL_Rect resultRect;
+
+        SDL_QueryTexture(
+            roundResultText,
+            NULL,
+            NULL,
+            &resultRect.w,
+            &resultRect.h
+        );
+
+        resultRect.x = 40;
+        resultRect.y = 30;
+
+        SDL_RenderCopy(renderer, roundResultText, NULL, &resultRect);
+    }
+
+    // ========================================
+    // CURRENT BET (TOP RIGHT)
+    // ========================================
+
+    if (currentBetRoundText)
+    {
+        SDL_Rect betRect;
+
+        SDL_QueryTexture(
+            currentBetRoundText,
+            NULL,
+            NULL,
+            &betRect.w,
+            &betRect.h
+        );
+
+        betRect.x = 615;
+        betRect.y = 30;
+
+        SDL_RenderCopy(renderer, currentBetRoundText, NULL, &betRect);
+    }
+}
+
+
+
+// ======================================================
+// CLEANUP
+// Releases all textures and font resources
+// ======================================================
+void GameScene::clean()
+{
+    SDL_DestroyTexture(bgTexture);
+    SDL_DestroyTexture(tableTexture);
+    SDL_DestroyTexture(panelTexture);
+    SDL_DestroyTexture(chipTexture);
+    SDL_DestroyTexture(arrowTexture);
+    SDL_DestroyTexture(buttonTexture);
+    if (cardTexture)
+    {
+        SDL_DestroyTexture(cardTexture);
+        cardTexture = nullptr;
+    }
+    if (roundResultText)
+    {
+        SDL_DestroyTexture(roundResultText);
+        roundResultText = nullptr;
+    }
+
+    if (currentBetRoundText)
+    {
+        SDL_DestroyTexture(currentBetRoundText);
+        currentBetRoundText = nullptr;
+    }
+
+    for (int i = 0; i < 5; i++)
+        SDL_DestroyTexture(chipCountText[i]);
+
+    SDL_DestroyTexture(walletText);
+    SDL_DestroyTexture(betText);
+
+    TTF_CloseFont(font);
+    TTF_Quit();
 }

@@ -53,6 +53,13 @@ public:
         return cards;
     }
 
+    void popCard()
+    {
+        if (!cards.empty()) {
+            cards.pop_back();
+        }
+    }
+
 private:
 
     std::vector<Card> cards;

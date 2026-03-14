@@ -35,8 +35,6 @@ public:
         return cards[index++];
     }
 
-private:
-
     std::vector<Card> cards;
-    int index = 0;
+    size_t index = 0;
 };
