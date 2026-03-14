@@ -1,8 +1,7 @@
 #pragma once
 
-#include <string>
 #include <SDL.h>
-#include <SDL_ttf.h>
+#include "TextureManager.h"
 #include "Button.h"
 #include "BlackJackGame.h"
 
@@ -10,21 +9,24 @@ class GameScene
 {
 public:
 
-    void init(SDL_Renderer* r);
-    void handleEvents(int mx, int my, bool click);
-    void update();
-    void render();
-    void clean();
+    void init(SDL_Renderer* renderer);
 
+    void update();
+
+    void render(SDL_Renderer* renderer);
+
+    void clean();
 
 private:
 
-    // ========================================
-    // CORE RENDERER
-    // ========================================
+    SDL_Renderer* renderer;
 
-    SDL_Renderer* renderer = nullptr;
+    SDL_Texture* tableTexture;
+    SDL_Texture* cardTexture;
+    SDL_Texture* buttonTexture;
+    SDL_Texture* chipTexture;
 
+<<<<<<< HEAD
 
     // ========================================
     // BACKGROUND TEXTURES
@@ -94,24 +96,35 @@ private:
 
     Button playButton;
     Button quitButton;
+=======
+    BlackJackGame game;
+>>>>>>> parent of ec86d49 (FIXed the UI the cards the chip the arrow only logic reamaing)
 
     Button hitButton;
     Button standButton;
     Button doubleButton;
     Button splitButton;
 
-    // ========================================
-    // ROUND INFORMATION
-    // ========================================
+    Button chip1Button;
+    Button chip5Button;
+    Button chip10Button;
+    Button chip25Button;
+    Button chip50Button;
 
+<<<<<<< HEAD
     BlackJackGame game;
 
     int currentBet = 0;
+=======
+    Button betButton;
+    Button playButton;
+    Button quitButton;
+    Button clearButton;
+    Button dealButton;
+>>>>>>> parent of ec86d49 (FIXed the UI the cards the chip the arrow only logic reamaing)
 
-    std::string roundResult = "";
-    std::string currentBetTextString = "";
-
-    // UI textures
-    SDL_Texture* roundResultText = nullptr;
-    SDL_Texture* currentBetRoundText = nullptr;
+    // layout anchors
+    int dealerY;
+    int playerY;
+    int cardStartX;
 };

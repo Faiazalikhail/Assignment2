@@ -5,28 +5,18 @@ Button::Button()
     hover = false;
     pressed = false;
 
-    // default button display size
-    baseW = 134;
-    baseH = 48;
+    baseW = 133;
+    baseH = 64;
 }
 
 void Button::init(SDL_Texture* tex, int index, int x, int y)
 {
     texture = tex;
 
-    // --------------------------------------------------
-    // BUTTON SPRITE SETTINGS
-    // spritesheet = 938 x 48
-    // 7 buttons horizontally
-    // --------------------------------------------------
-
-    const int BUTTON_WIDTH = 134;
-    const int BUTTON_HEIGHT = 48;
-
-    srcRect.x = index * BUTTON_WIDTH;
+    srcRect.x = index * 133;
     srcRect.y = 0;
-    srcRect.w = BUTTON_WIDTH;
-    srcRect.h = BUTTON_HEIGHT;
+    srcRect.w = 133;
+    srcRect.h = 64;
 
     destRect.x = x;
     destRect.y = y;
@@ -54,10 +44,6 @@ void Button::update(int mx, int my, bool clicked)
 void Button::render(SDL_Renderer* renderer)
 {
     SDL_Rect draw = destRect;
-
-    // --------------------------------------------------
-    // SIMPLE HOVER EFFECT
-    // --------------------------------------------------
 
     if (hover)
     {

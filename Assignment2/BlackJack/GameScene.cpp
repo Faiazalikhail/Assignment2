@@ -1,34 +1,47 @@
 #include "GameScene.h"
+<<<<<<< HEAD
 #include "TextureManager.h"
 #include <SDL_ttf.h>
 #include <string>
 #include <cstdlib>
+=======
+#include "InputManager.h"
+>>>>>>> parent of ec86d49 (FIXed the UI the cards the chip the arrow only logic reamaing)
 
-
-// ======================================================
-// TEXT CREATION HELPER
-// Creates SDL texture from text string
-// ======================================================
-SDL_Texture* createText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text)
+void GameScene::init(SDL_Renderer* ren)
 {
-    SDL_Color white = { 255,255,255 };
+    renderer = ren;
 
-    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), white);
+    tableTexture = TextureManager::LoadTexture("../images/TABLE.png", ren);
+    cardTexture = TextureManager::LoadTexture("../images/CARDS.png", ren);
+    buttonTexture = TextureManager::LoadTexture("../images/BUTTONS.png", ren);
+    chipTexture = TextureManager::LoadTexture("../images/CHIPS.png", ren);
 
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    // layout anchors
+    dealerY = 160;
+    playerY = 420;
+    cardStartX = 430;
 
-    SDL_FreeSurface(surface);
+    // Action Buttons (y = 650)
+    hitButton.init(buttonTexture, 0, 260, 650);
+    standButton.init(buttonTexture, 1, 420, 650);
+    doubleButton.init(buttonTexture, 2, 580, 650); // assuming index 2 is double
+    splitButton.init(buttonTexture, 3, 740, 650); // assuming index 3 is split
 
-    return texture;
-}
+    // Betting Panel Chips (x = 820)
+    chip1Button.init(chipTexture, 0, 820, 200);
+    chip5Button.init(chipTexture, 1, 820, 270);
+    chip10Button.init(chipTexture, 2, 820, 340);
+    chip25Button.init(chipTexture, 3, 820, 410);
+    chip50Button.init(chipTexture, 4, 820, 480);
 
-    // ======================================================
-    // DRAW CARD FROM SPRITESHEET
-    // ======================================================
-void GameScene::drawCard(int rank, int suit, int x, int y)
-{
-    SDL_Rect src;
+    // Betting Panel Buttons (x = 820 implied from layout visual, maybe 820 or centered below chips)
+    // we'll place them aligned roughly. Assuming button texture indices based on typical play/quit/bet
+    betButton.init(buttonTexture, 4, 820, 560);
+    playButton.init(buttonTexture, 5, 820, 630);
+    quitButton.init(buttonTexture, 6, 820, 700);
 
+<<<<<<< HEAD
     // The first two sprites (indices 0 and 1) are card backs.
     // Real cards start at index 2.
     src.x = (rank + 2) * CARD_W;
@@ -226,61 +239,83 @@ void GameScene::handleEvents(int mx, int my, bool click)
             my >= R.y && my <= R.y + R.h;
 
         if (click)
+=======
+    // clear and deal button legacy mapped for now or handled elsewhere
+    dealButton.init(buttonTexture, 5, 820, 630); // Alias deal to play for now
+    clearButton.init(buttonTexture, 6, 820, 700); // Alias clear to quit for now? No, we shouldn't alias.
+
+    hitButton.setCallback([this]()
+>>>>>>> parent of ec86d49 (FIXed the UI the cards the chip the arrow only logic reamaing)
         {
-            if (hoverL && chipCount[i] > 0)
-                chipCount[i]--;
+            game.playerHit();
+        });
 
-            if (hoverR)
-            {
-                int futureBet = totalBet + chipValues[i];
-
-                if (futureBet <= wallet)
-                    chipCount[i]++;
+    standButton.setCallback([this]()
+        {
+            if (game.state == GameState::PlayerTurn) {
+                game.dealerTurn();
+                game.settle();
             }
-        }
-    }
+        });
 
-    // ---------------------------
-    // BUTTON INPUT
-    // ---------------------------
+    dealButton.setCallback([this]()
+        {
+            if (game.state == GameState::Betting && game.player.bet > 0) {
+                game.startRound();
+            } else if (game.state == GameState::GameOver) {
+                game.resetForNewRound();
+            }
+        });
 
-    playButton.update(mx, my, click);
-    quitButton.update(mx, my, click);
+    chip1Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(1); });
+    chip5Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(5); });
+    chip10Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(10); });
+    chip25Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(25); });
+    chip50Button.setCallback([this](){ if (game.state == GameState::Betting) game.player.placeBet(50); });
 
+<<<<<<< HEAD
     if (game.state == GameState::PlayerTurn) {
         hitButton.update(mx, my, click);
         standButton.update(mx, my, click);
         doubleButton.update(mx, my, click);
         splitButton.update(mx, my, click);
     }
+=======
+    betButton.setCallback([this]() { /* Placeholder for bet confirmation if needed */ });
+    playButton.setCallback([this]() { dealButton.update(InputManager::getInstance()->getMouseX(), InputManager::getInstance()->getMouseY(), true); });
+    quitButton.setCallback([]() { exit(0); });
+
+    clearButton.setCallback([this](){ if (game.state == GameState::Betting) { game.player.credits += game.player.bet; game.player.bet = 0; } });
+>>>>>>> parent of ec86d49 (FIXed the UI the cards the chip the arrow only logic reamaing)
 }
 
-
-
-// ======================================================
-// UPDATE
-// Calculates bet values and regenerates UI text
-// ======================================================
 void GameScene::update()
 {
-    totalBet = 0;
+    int mouseX = InputManager::getInstance()->getMouseX();
+    int mouseY = InputManager::getInstance()->getMouseY();
+    bool click = InputManager::getInstance()->isMouseClicked();
 
-    for (int i = 0; i < 5; i++)
-        totalBet += chipCount[i] * chipValues[i];
-
-    if (walletText) SDL_DestroyTexture(walletText);
-    if (betText) SDL_DestroyTexture(betText);
-
-    walletText = createText(renderer, font, "Wallet: " + std::to_string(wallet));
-    betText = createText(renderer, font, "Current Bet: " + std::to_string(totalBet));
-
-    for (int i = 0; i < 5; i++)
-    {
-        if (chipCountText[i]) SDL_DestroyTexture(chipCountText[i]);
-
-        chipCountText[i] =
-            createText(renderer, font, "x" + std::to_string(chipCount[i]));
+    if (game.state == GameState::PlayerTurn) {
+        hitButton.update(mouseX, mouseY, click);
+        standButton.update(mouseX, mouseY, click);
+        doubleButton.update(mouseX, mouseY, click);
+        splitButton.update(mouseX, mouseY, click);
+    } else if (game.state == GameState::Betting) {
+        dealButton.update(mouseX, mouseY, click);
+        chip1Button.update(mouseX, mouseY, click);
+        chip5Button.update(mouseX, mouseY, click);
+        chip10Button.update(mouseX, mouseY, click);
+        chip25Button.update(mouseX, mouseY, click);
+        chip50Button.update(mouseX, mouseY, click);
+        clearButton.update(mouseX, mouseY, click);
+        betButton.update(mouseX, mouseY, click);
+        playButton.update(mouseX, mouseY, click);
+        quitButton.update(mouseX, mouseY, click);
+    } else if (game.state == GameState::GameOver) {
+        dealButton.update(mouseX, mouseY, click); // Reused as "Next Round"
+        quitButton.update(mouseX, mouseY, click);
     }
+<<<<<<< HEAD
 
     // ========================================
     // ROUND RESULT TEXT
@@ -310,27 +345,22 @@ void GameScene::update()
     currentBetTextString = "Current Bet: " + std::to_string(currentBet);
     currentBetRoundText =
         createText(renderer, font, currentBetTextString);
+=======
+>>>>>>> parent of ec86d49 (FIXed the UI the cards the chip the arrow only logic reamaing)
 }
 
-
-
-// ======================================================
-// RENDER
-// Draws full scene in layered order
-// ======================================================
-void GameScene::render()
+void GameScene::render(SDL_Renderer* renderer)
 {
-    // ---------------------------
-    // BACKGROUND
-    // ---------------------------
+    SDL_RenderCopy(renderer, tableTexture, NULL, NULL);
 
-    SDL_Rect bgRect = { 0,0,1024,768 };
-    SDL_RenderCopy(renderer, bgTexture, NULL, &bgRect);
+    // ---------------------
+    // Dealer cards
+    // ---------------------
 
-    // ---------------------------
-    // TABLE
-    // ---------------------------
+    int x = cardStartX;
+    bool hideSecondCard = (game.state == GameState::PlayerTurn && game.dealer.hand.getCards().size() >= 2);
 
+<<<<<<< HEAD
     SDL_Rect tableRect = { 0,0,820,650 };
     SDL_RenderCopy(renderer, tableTexture, NULL, &tableRect);
 
@@ -508,205 +538,93 @@ void GameScene::render()
     // ======================================================
 
     for (int i = 0; i < 5; i++)
+=======
+    int cardIndex = 0;
+    for (auto& c : game.dealer.hand.getCards())
+>>>>>>> parent of ec86d49 (FIXed the UI the cards the chip the arrow only logic reamaing)
     {
-        int y = rows[i];
+        SDL_Rect src;
 
-        int chipCols[5] = { 1,3,4,0,1 };
-        int chipRows[5] = { 0,0,0,1,1 };
-
-        SDL_Rect chipSrc =
-        {
-            chipCols[i] * chipW,
-            chipRows[i] * chipH,
-            chipW,
-            chipH
-        };
-
-        SDL_Rect chipDest =
-        {
-            chipX,
-            y,
-            chipW,
-            chipH
-        };
-
-        SDL_RenderCopy(renderer, chipTexture, &chipSrc, &chipDest);
-
-
-        // ---------------------------
-        // ARROWS
-        // ---------------------------
-
-        SDL_Rect srcLeft = { 0,0,26,40 };
-        SDL_Rect srcRight = { 26,0,26,40 };
-
-        SDL_Rect destL = leftArrow[i];
-        SDL_Rect destR = rightArrow[i];
-
-        if (mouseX >= destL.x && mouseX <= destL.x + destL.w &&
-            mouseY >= destL.y && mouseY <= destL.y + destL.h)
-        {
-            destL.w += 4;
-            destL.h += 4;
+        if (hideSecondCard && cardIndex == 1) {
+            // Render back of card
+            src.w = 96;
+            src.h = 140;
+            src.x = 0; // Assume top left of card texture or a specific offset has back
+            src.y = 4 * 140; // Usually row 5 is the back in these spritesheets
+        } else {
+            src.w = 96;
+            src.h = 140;
+            src.x = (c.rank - 1) * 96;
+            src.y = c.suit * 140;
         }
 
-        if (mouseX >= destR.x && mouseX <= destR.x + destR.w &&
-            mouseY >= destR.y && mouseY <= destR.y + destR.h)
-        {
-            destR.w += 4;
-            destR.h += 4;
-        }
+        SDL_Rect dest = { x, dealerY, 96, 140 };
 
-        SDL_RenderCopy(renderer, arrowTexture, &srcLeft, &destL);
-        SDL_RenderCopy(renderer, arrowTexture, &srcRight, &destR);
+        SDL_RenderCopy(renderer, cardTexture, &src, &dest);
 
-
-        // ---------------------------
-        // CHIP COUNT TEXT
-        // ---------------------------
-
-        SDL_Rect textRect;
-
-        SDL_QueryTexture(chipCountText[i], NULL, NULL, &textRect.w, &textRect.h);
-
-        textRect.x = chipX + (chipW / 2) - (textRect.w / 2);
-        textRect.y = y + chipH + 8;
-
-        SDL_RenderCopy(renderer, chipCountText[i], NULL, &textRect);
+        x += 110;
+        cardIndex++;
     }
 
+    // ---------------------
+    // Player cards
+    // ---------------------
 
+    x = cardStartX;
 
-    // ======================================================
-    // PANEL BUTTONS
-    // ======================================================
-
-    playButton.render(renderer);
-    quitButton.render(renderer);
-
-
-
-    // ======================================================
-    // TABLE ACTION BUTTONS
-    // ======================================================
-
-    hitButton.render(renderer);
-    standButton.render(renderer);
-    doubleButton.render(renderer);
-    splitButton.render(renderer);
-
-
-
-    // ======================================================
-    // WALLET TEXT
-    // ======================================================
-
-    SDL_Rect walletRect;
-
-    SDL_QueryTexture(walletText, NULL, NULL, &walletRect.w, &walletRect.h);
-
-    walletRect.x = 820 + (204 / 2) - (walletRect.w / 2);
-    walletRect.y = 30;
-
-    SDL_RenderCopy(renderer, walletText, NULL, &walletRect);
-
-
-
-    // ======================================================
-    // CURRENT BET TEXT
-    // ======================================================
-
-    SDL_Rect betRect;
-
-    SDL_QueryTexture(betText, NULL, NULL, &betRect.w, &betRect.h);
-
-    betRect.x = 820 + (204 / 2) - (betRect.w / 2);
-    betRect.y = 65;
-
-    SDL_RenderCopy(renderer, betText, NULL, &betRect);
-
-    // ========================================
-    // ROUND RESULT (TOP LEFT)
-    // ========================================
-
-    if (roundResultText)
+    for (auto& c : game.player.hand.getCards())
     {
-        SDL_Rect resultRect;
+        SDL_Rect src;
 
-        SDL_QueryTexture(
-            roundResultText,
-            NULL,
-            NULL,
-            &resultRect.w,
-            &resultRect.h
-        );
+        src.w = 96;
+        src.h = 140;
+        src.x = (c.rank - 1) * 96;
+        src.y = c.suit * 140;
 
-        resultRect.x = 40;
-        resultRect.y = 30;
+        SDL_Rect dest = { x, playerY, 96, 140 };
 
-        SDL_RenderCopy(renderer, roundResultText, NULL, &resultRect);
+        SDL_RenderCopy(renderer, cardTexture, &src, &dest);
+
+        x += 110;
     }
 
-    // ========================================
-    // CURRENT BET (TOP RIGHT)
-    // ========================================
+    // ---------------------
+    // Buttons
+    // ---------------------
 
-    if (currentBetRoundText)
-    {
-        SDL_Rect betRect;
-
-        SDL_QueryTexture(
-            currentBetRoundText,
-            NULL,
-            NULL,
-            &betRect.w,
-            &betRect.h
-        );
-
-        betRect.x = 615;
-        betRect.y = 30;
-
-        SDL_RenderCopy(renderer, currentBetRoundText, NULL, &betRect);
+    if (game.state == GameState::PlayerTurn) {
+        hitButton.render(renderer);
+        standButton.render(renderer);
+        doubleButton.render(renderer);
+        splitButton.render(renderer);
+    } else if (game.state == GameState::Betting) {
+        // dealButton.render(renderer);  -- Using play button visually
+        chip1Button.render(renderer);
+        chip5Button.render(renderer);
+        chip10Button.render(renderer);
+        chip25Button.render(renderer);
+        chip50Button.render(renderer);
+        betButton.render(renderer);
+        playButton.render(renderer);
+        quitButton.render(renderer);
+        // clearButton.render(renderer);
+    } else if (game.state == GameState::GameOver) {
+        playButton.render(renderer); // Using play for deal visually
+        quitButton.render(renderer);
     }
 }
 
-
-
-// ======================================================
-// CLEANUP
-// Releases all textures and font resources
-// ======================================================
 void GameScene::clean()
 {
-    SDL_DestroyTexture(bgTexture);
     SDL_DestroyTexture(tableTexture);
-    SDL_DestroyTexture(panelTexture);
-    SDL_DestroyTexture(chipTexture);
-    SDL_DestroyTexture(arrowTexture);
+    tableTexture = nullptr;
+
+    SDL_DestroyTexture(cardTexture);
+    cardTexture = nullptr;
+
     SDL_DestroyTexture(buttonTexture);
-    if (cardTexture)
-    {
-        SDL_DestroyTexture(cardTexture);
-        cardTexture = nullptr;
-    }
-    if (roundResultText)
-    {
-        SDL_DestroyTexture(roundResultText);
-        roundResultText = nullptr;
-    }
+    buttonTexture = nullptr;
 
-    if (currentBetRoundText)
-    {
-        SDL_DestroyTexture(currentBetRoundText);
-        currentBetRoundText = nullptr;
-    }
-
-    for (int i = 0; i < 5; i++)
-        SDL_DestroyTexture(chipCountText[i]);
-
-    SDL_DestroyTexture(walletText);
-    SDL_DestroyTexture(betText);
-
-    TTF_CloseFont(font);
-    TTF_Quit();
+    SDL_DestroyTexture(chipTexture);
+    chipTexture = nullptr;
 }

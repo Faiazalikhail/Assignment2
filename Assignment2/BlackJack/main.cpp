@@ -2,9 +2,11 @@
 
 int main(int argc, char* argv[])
 {
+    (void)argc;
+    (void)argv;
     Game game;
 
-    if (!game.init())
+    if (!game.init("Blackjack", 1024, 768))
         return -1;
 
     while (game.running())
