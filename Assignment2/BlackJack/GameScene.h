@@ -100,9 +100,6 @@ private:
     Button doubleButton;
     Button splitButton;
 
-    // Added to hook logic properly without touching old UI vars where possible
-    void resetChipCounts();
-
     // ========================================
     // ROUND INFORMATION
     // ========================================

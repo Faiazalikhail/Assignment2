@@ -149,18 +149,21 @@ void GameScene::init(SDL_Renderer* r)
     roundResult = "";
     currentBetTextString = "Current Bet: 0";
 
-    // Hook Callbacks
+    // ========================================
+    // LOGIC CALLBACKS (DO NOT MODIFY UI VARIABLES)
+    // ========================================
+
     playButton.setCallback([this]() {
         if (game.state == GameState::Betting && totalBet > 0) {
             currentBet = totalBet;
-            game.player.bet = currentBet; // Pass to model
-            wallet -= totalBet; // Visually deduct from UI wallet initially
-            game.player.credits = wallet; // Sync model
+            game.player.bet = currentBet;
+            wallet -= totalBet; // Visually update UI wallet
+            game.player.credits = wallet; // Sync to logic
             game.startRound();
-            resetChipCounts();
+            for (int i = 0; i < 5; i++) chipCount[i] = 0; // Reset visual chips
         } else if (game.state == GameState::GameOver) {
             game.resetForNewRound();
-            resetChipCounts();
+            for (int i = 0; i < 5; i++) chipCount[i] = 0;
             currentBet = 0;
         }
     });
@@ -180,26 +183,18 @@ void GameScene::init(SDL_Renderer* r)
     doubleButton.setCallback([this]() {
         if (wallet >= currentBet) {
             game.playerDouble();
-            wallet = game.player.credits; // Sync from engine
-            currentBet = game.player.bet; // Sync from engine
+            wallet = game.player.credits;
+            currentBet = game.player.bet;
         }
     });
 
     splitButton.setCallback([this]() {
         if (wallet >= currentBet) {
             game.playerSplit();
-            wallet = game.player.credits; // Sync from engine
-            currentBet = game.player.bet; // Sync from engine
+            wallet = game.player.credits;
+            currentBet = game.player.bet;
         }
     });
-}
-
-void GameScene::resetChipCounts()
-{
-    for (int i = 0; i < 5; i++)
-    {
-        chipCount[i] = 0;
-    }
 }
 
 
@@ -252,10 +247,12 @@ void GameScene::handleEvents(int mx, int my, bool click)
     playButton.update(mx, my, click);
     quitButton.update(mx, my, click);
 
-    hitButton.update(mx, my, click);
-    standButton.update(mx, my, click);
-    doubleButton.update(mx, my, click);
-    splitButton.update(mx, my, click);
+    if (game.state == GameState::PlayerTurn) {
+        hitButton.update(mx, my, click);
+        standButton.update(mx, my, click);
+        doubleButton.update(mx, my, click);
+        splitButton.update(mx, my, click);
+    }
 }
 
 
@@ -355,7 +352,6 @@ void GameScene::render()
     SDL_RenderCopy(renderer, dealerLabel, NULL, &dealerTextRect);
 
 
-    // dynamic dealer cards
     int dealerY = 160;
     int dealerStartX = 430;
 
@@ -375,7 +371,7 @@ void GameScene::render()
             {
                 drawCard(c.rank, c.suit, dx, dealerY);
             }
-            dx += 110; // Explicit prompt spacing
+            dx += 110;
             index++;
         }
     }
